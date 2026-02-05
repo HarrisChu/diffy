@@ -97,8 +97,8 @@ public class Main {
             long         startDecodeTime = 0;
             try {
                 client = pool.getClient();
+                startTime = System.nanoTime();
                 for (int i = 0; i < config.getIterationsPerConcurrency(); i++) {
-                    startTime = System.nanoTime();
                     ResultSet result = client.execute(config.getStatement());
                     startDecodeTime = System.nanoTime();
                     while (result.hasNext()) {

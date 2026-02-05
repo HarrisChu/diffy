@@ -2,9 +2,9 @@ env:
   NEBULA_ADDRESS: "ng-uat-01.vesoft-inc.com:9669"
   NEBULA_USER: "harris"
   NEBULA_PASSWORD: "Nebula2025.harris"
-  NEBULA_CONCURRENCY: 5
-  NEBULA_ITERATIONS_PER_CONCURRENCY: 100
-  NEBULA_STATEMENT: "use sf1 match(v) return v limit 1000"
+  NEBULA_CONCURRENCY: 1
+  NEBULA_ITERATIONS_PER_CONCURRENCY: 10
+  NEBULA_STATEMENT: "use sf1 match p=(v)->(v1) return p limit 100"
 
 jobs:
   - name: golang

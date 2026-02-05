@@ -12,6 +12,7 @@ import (
 type resp struct {
 	AvgLatencyUs  int64 `json:"avg_latency_us"`
 	AvgResponseUs int64 `json:"avg_response_us"`
+	AvgDecodeUs   int64 `json:"avg_decode_us"`
 }
 
 func main() {
@@ -39,13 +40,14 @@ func run(typStr string) ([]byte, error) {
 		return nil, fmt.Errorf("unknown scan type: %s", typStr)
 	}
 	controller := pkg.NewController(cfg, scanType)
-	latencyUs, responseUs, err := controller.Run()
+	latencyUs, responseUs, decodeUs, err := controller.Run()
 	if err != nil {
 		return nil, err
 	}
 	r := resp{
 		AvgLatencyUs:  latencyUs,
 		AvgResponseUs: responseUs,
+		AvgDecodeUs:   decodeUs,
 	}
 	bs, err := json.Marshal(r)
 	if err != nil {
