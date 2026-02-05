@@ -1,0 +1,32 @@
+env:
+  NEBULA_ADDRESS: "ng-uat-01.vesoft-inc.com:9669"
+  NEBULA_USER: "harris"
+  NEBULA_PASSWORD: "Nebula2025.harris"
+  NEBULA_CONCURRENCY: 5
+  NEBULA_ITERATIONS_PER_CONCURRENCY: 100
+  NEBULA_STATEMENT: "use sf1 match(v) return v limit 1000"
+
+jobs:
+  - name: golang
+    shell: |
+      cd go
+      go run main.go default
+  
+  - name: golang without scan
+    shell: |
+      cd go
+      go run main.go no_scan
+  
+  - name: golang without no reuse
+    shell: |
+      cd go
+      go run main.go no_reuse
+  - name: python thread
+    shell: |
+      cd python
+      python3 main.py thread
+
+  - name: python process
+    shell: |
+      cd python
+      python3 main.py process
