@@ -23,8 +23,9 @@ type Controller struct {
 }
 
 type Output struct {
-	latencyUs  int64 `json:"latency_us"`
-	responseUs int64 `json:"response_us"`
+	LatencyUs  int64 `json:"latency_us"`
+	ResponseUs int64 `json:"response_us"`
+	DecodeUs   int64 `json:"decode_us"`
 }
 
 func NewController(cfg *config, typ ScanType) *Controller {
@@ -34,23 +35,24 @@ func NewController(cfg *config, typ ScanType) *Controller {
 	}
 }
 
-func (c *Controller) Run() (int64, int64, error) {
+func (c *Controller) Run() (int64, int64, int64, error) {
 	pool, err := nebula_ng.NewNebulaPool(
 		c.config.address,
 		c.config.user,
 		c.config.password,
 	)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 	defer pool.Close()
 	var errGroup errgroup.Group
 	var totalLatencyUs atomic.Int64
 	var totalResponseUs atomic.Int64
+	var totalDecodeUs atomic.Int64
 	for i := 0; i < c.config.concurrency; i++ {
 		client, err := pool.GetClient()
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, 0, err
 		}
 		defer client.Close()
 		errGroup.Go(
@@ -59,23 +61,26 @@ func (c *Controller) Run() (int64, int64, error) {
 				if err != nil {
 					return err
 				}
-				totalLatencyUs.Add(output.latencyUs)
-				totalResponseUs.Add(output.responseUs)
+				totalLatencyUs.Add(output.LatencyUs)
+				totalResponseUs.Add(output.ResponseUs)
+				totalDecodeUs.Add(output.DecodeUs)
 				return nil
 			})
 	}
 	if err := errGroup.Wait(); err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 	avgLatencyUs := totalLatencyUs.Load() / int64(c.config.concurrency*c.config.iterationsPerConcurrency)
 	avgResponseUs := totalResponseUs.Load() / int64(c.config.concurrency*c.config.iterationsPerConcurrency)
-	return avgLatencyUs, avgResponseUs, nil
+	avgDecodeUs := totalDecodeUs.Load() / int64(c.config.concurrency*c.config.iterationsPerConcurrency)
+	return avgLatencyUs, avgResponseUs, avgDecodeUs, nil
 
 }
 
 func (c *Controller) runWorker(client types.Client) (*Output, error) {
 	var totalLatencyUs int64
 	var totalResponseUs int64
+	var totalDecodeUs int64
 	for i := 0; i < c.config.iterationsPerConcurrency; i++ {
 		start := time.Now()
 		r, err := client.Execute(c.config.statement)
@@ -87,13 +92,16 @@ func (c *Controller) runWorker(client types.Client) (*Output, error) {
 		case ScanTypeNoScan:
 			// do nothing
 		case ScanTypeNoReuse:
+			decodeStart := time.Now()
 			for r.HasNext() {
 				_, err := r.Next()
 				if err != nil {
 					return nil, err
 				}
 			}
+			totalDecodeUs += time.Since(decodeStart).Microseconds()
 		case ScanTypeDefault:
+			decodeStart := time.Now()
 			values := make([]nebula_ng.NullValue, len(r.Columns()))
 			anyValues := make([]any, len(r.Columns()))
 			for i := range values {
@@ -104,11 +112,13 @@ func (c *Controller) runWorker(client types.Client) (*Output, error) {
 					return nil, err
 				}
 			}
+			totalDecodeUs += time.Since(decodeStart).Microseconds()
 		}
 		totalResponseUs += time.Since(start).Microseconds()
 	}
 	return &Output{
-		latencyUs:  totalLatencyUs,
-		responseUs: totalResponseUs,
+		LatencyUs:  totalLatencyUs,
+		ResponseUs: totalResponseUs,
+		DecodeUs:   totalDecodeUs,
 	}, nil
 }

@@ -12,40 +12,50 @@ class Executor(object):
   def run(self):
     total_latency = 0
     total_response = 0
+    total_decode = 0
     if self.typ == 'thread':
       with ThreadPoolExecutor(max_workers=self.cfg.concurrency) as executor:
         futures = []
         for _ in range(self.cfg.concurrency):
           futures.append(executor.submit(self.task))
         for future in futures:
-          latency, response = future.result()
+          latency, response, decode = future.result()
           total_latency += latency
           total_response += response
+          total_decode += decode
     elif self.typ == 'process':
       with ProcessPoolExecutor(max_workers=self.cfg.concurrency) as executor:
         futures = []
         for _ in range(self.cfg.concurrency):
           futures.append(executor.submit(self.task))
         for future in futures:
-          latency, response = future.result()
+          latency, response, decode = future.result()
           total_latency += latency
           total_response += response
+          total_decode += decode
     else:
       raise ValueError("Unknown executor type: {}".format(self.typ))
     return {
       "avg_latency_us": total_latency // (self.cfg.concurrency * self.cfg.iterations_per_concurrency),
-      "avg_response_us": total_response // (self.cfg.concurrency * self.cfg.iterations_per_concurrency)}
+      "avg_response_us": total_response // (self.cfg.concurrency * self.cfg.iterations_per_concurrency),
+      "avg_decode_us": total_decode // (self.cfg.concurrency * self.cfg.iterations_per_concurrency),
+    }
+      
+
     
     
   def task(self):
     total_latency = 0
     total_response = 0
+    total_decode = 0
     client = NebulaClient(self.cfg.address, self.cfg.user, self.cfg.password)
     for _ in range(self.cfg.iterations_per_concurrency):
       now = time.perf_counter_ns()
       result = client.execute(self.cfg.statement)
       total_latency += result.latency_us
+      start_decode = time.perf_counter_ns()
       for _ in result:
          pass
+      total_decode += (time.perf_counter_ns() - start_decode) // 1000
       total_response += (time.perf_counter_ns() - now) // 1000
-    return total_latency, total_response
+    return total_latency, total_response, total_decode
