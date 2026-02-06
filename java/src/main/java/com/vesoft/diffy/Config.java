@@ -15,13 +15,13 @@ public class Config {
     private int    warnup;
 
     public Config() {
-        this.address = getEnv("NEBULA_ADDRESS", "192.168.8.6:3820");
-        this.user = getEnv("NEBULA_USER", "root");
-        this.password = getEnv("NEBULA_PASSWORD", "NebulaGraph01");
-        this.statement = getEnv("NEBULA_STATEMENT", "use sf100_nicole match(v:Comment) return v limit 10000");
+        this.address = getEnv("NEBULA_ADDRESS", "192.168.15.11:9669");
+        this.user = getEnv("NEBULA_USER", "harris");
+        this.password = getEnv("NEBULA_PASSWORD", "Nebula2025.harris");
+        this.statement = getEnv("NEBULA_STATEMENT", "use sf1 match p=(v:Comment)->(v1) return p order by v.id desc  limit 10");
         this.concurrency = getEnvAsInt("NEBULA_CONCURRENCY", 1);
         this.iterationsPerConcurrency = getEnvAsInt("NEBULA_ITERATIONS_PER_CONCURRENCY", 10);
-        this.warnup = getEnvAsInt("WARM_UP", 50);
+        this.warnup = getEnvAsInt("WARM_UP", 1);
     }
 
     private String getEnv(String key, String defaultValue) {
