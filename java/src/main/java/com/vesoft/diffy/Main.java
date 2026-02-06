@@ -13,15 +13,21 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) throws Exception {
+        boolean warmup = false;
+        if (args.length > 0 && args[0].equalsIgnoreCase("warmup")) {
+            warmup = true;
+        }
         System.out.println();
-        System.out.println(run());
+        System.out.println(run(warmup));
         System.out.println();
     }
 
-    public static String run() throws Exception {
+    public static String run(boolean warmup) throws Exception {
         Config     cfg        = new Config();
         Controller controller = new Controller(cfg);
-        controller.warmup();
+        if (warmup) {
+            controller.warmup();
+        }
         controller.execute();
         long latencyUs  = controller.getAvgLatencyUs();
         long responseUs = controller.getAvgResponseUs();

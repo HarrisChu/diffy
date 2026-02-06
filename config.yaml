@@ -31,7 +31,12 @@ jobs:
       cd python
       python3 main.py process
 
-  - name: java
+  - name: java without warmup
     shell: |
       cd java
       mvn compile exec:java -Dexec.mainClass="com.vesoft.diffy.Main"
+
+  - name: java with 50 warmup
+    shell: |
+      cd java
+      mvn compile exec:java -Dexec.mainClass="com.vesoft.diffy.Main" -Dexec.args="warmup"
