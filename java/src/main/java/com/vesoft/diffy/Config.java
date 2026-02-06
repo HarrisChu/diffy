@@ -10,16 +10,18 @@ public class Config {
     private String user;
     private String password;
     private String statement;
-    private int concurrency;
-    private int iterationsPerConcurrency;
+    private int    concurrency;
+    private int    iterationsPerConcurrency;
+    private int    warnup;
 
     public Config() {
         this.address = getEnv("NEBULA_ADDRESS", "192.168.8.6:3820");
         this.user = getEnv("NEBULA_USER", "root");
         this.password = getEnv("NEBULA_PASSWORD", "NebulaGraph01");
-        this.statement = getEnv("NEBULA_STATEMENT", "");
+        this.statement = getEnv("NEBULA_STATEMENT", "use sf100_nicole match(v:Comment) return v limit 10000");
         this.concurrency = getEnvAsInt("NEBULA_CONCURRENCY", 1);
         this.iterationsPerConcurrency = getEnvAsInt("NEBULA_ITERATIONS_PER_CONCURRENCY", 10);
+        this.warnup = getEnvAsInt("WARM_UP", 50);
     }
 
     private String getEnv(String key, String defaultValue) {
@@ -61,5 +63,9 @@ public class Config {
 
     public int getIterationsPerConcurrency() {
         return iterationsPerConcurrency;
+    }
+
+    public int getWarnup() {
+        return warnup;
     }
 }
