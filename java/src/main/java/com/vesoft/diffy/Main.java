@@ -21,10 +21,11 @@ public class Main {
     public static String run() throws Exception {
         Config     cfg        = new Config();
         Controller controller = new Controller(cfg);
+        controller.warmup();
         controller.execute();
         long latencyUs  = controller.getAvgLatencyUs();
         long responseUs = controller.getAvgResponseUs();
-        long decodeUs = controller.getAvgDecodeUs();
+        long decodeUs   = controller.getAvgDecodeUs();
 
         Response response = new Response(latencyUs, responseUs, decodeUs);
         return JSON.toJSONString(response);
@@ -33,9 +34,30 @@ public class Main {
     static class Controller {
         private Config config;
         private Output output;
+        private int    iterEachConcurrency;
 
         public Controller(Config config) {
             this.config = config;
+            this.iterEachConcurrency = config.getIterationsPerConcurrency();
+        }
+
+        public void warmup() throws Exception {
+            NebulaPool pool = null;
+            try {
+                pool = NebulaPool.builder(config.getAddress(), config.getUser(), config.getPassword())
+                        .withMaxClientSize(1)
+                        .withConnectTimeoutMills(5000)
+                        .withRequestTimeoutMills(60000)
+                        .build();
+                iterEachConcurrency = config.getWarnup();
+                runWorker(pool);
+                iterEachConcurrency = config.getIterationsPerConcurrency();
+            } finally {
+                if (pool != null) {
+                    pool.close();
+                }
+            }
+
         }
 
         public void execute() throws Exception {
@@ -58,7 +80,7 @@ public class Main {
             NebulaPool pool = NebulaPool.builder(config.getAddress(), config.getUser(), config.getPassword())
                     .withMaxClientSize(config.getConcurrency())
                     .withConnectTimeoutMills(5000)
-                    .withRequestTimeoutMills(10000)
+                    .withRequestTimeoutMills(60000)
                     .build();
 
             ExecutorService      executorService = Executors.newFixedThreadPool(config.getConcurrency());
@@ -70,7 +92,7 @@ public class Main {
 
             long totalLatencyUs  = 0;
             long totalResponseUs = 0;
-            long totalDecodeUs = 0;
+            long totalDecodeUs   = 0;
 
             for (Future<Output> future : futures) {
                 Output output = future.get();
@@ -98,7 +120,7 @@ public class Main {
             try {
                 client = pool.getClient();
                 startTime = System.nanoTime();
-                for (int i = 0; i < config.getIterationsPerConcurrency(); i++) {
+                for (int i = 0; i < iterEachConcurrency; i++) {
                     ResultSet result = client.execute(config.getStatement());
                     startDecodeTime = System.nanoTime();
                     while (result.hasNext()) {
@@ -143,38 +165,38 @@ public class Main {
     }
 
     static class Response {
-        long avgLatencyUs;
-        long avgResponseUs;
-        long avgDecodeUs;
+        long avg_latency_us;
+        long avg_response_us;
+        long avg_decode_us;
 
         public Response(long avgLatencyUs, long avgResponseUs, long avgDecodeUs) {
-            this.avgLatencyUs = avgLatencyUs;
-            this.avgResponseUs = avgResponseUs;
-            this.avgDecodeUs = avgDecodeUs;
+            this.avg_latency_us = avgLatencyUs;
+            this.avg_response_us = avgResponseUs;
+            this.avg_decode_us = avgDecodeUs;
         }
 
-        public long getAvgLatencyUs() {
-            return avgLatencyUs;
+        public long getAvg_latency_us() {
+            return avg_latency_us;
         }
 
-        public void setAvgLatencyUs(long avgLatencyUs) {
-            this.avgLatencyUs = avgLatencyUs;
+        public void setAvg_latency_us(long avg_latency_us) {
+            this.avg_latency_us = avg_latency_us;
         }
 
-        public long getAvgResponseUs() {
-            return avgResponseUs;
+        public long getAvg_response_us() {
+            return avg_response_us;
         }
 
-        public void setAvgResponseUs(long avgResponseUs) {
-            this.avgResponseUs = avgResponseUs;
+        public void setAvg_response_us(long avg_response_us) {
+            this.avg_response_us = avg_response_us;
         }
 
-        public long getAvgDecodeUs() {
-            return avgDecodeUs;
+        public long getAvg_decode_us() {
+            return avg_decode_us;
         }
 
-        public void setAvgDecodeUs(long avgDecodeUs) {
-            this.avgDecodeUs = avgDecodeUs;
+        public void setAvg_decode_us(long avg_decode_us) {
+            this.avg_decode_us = avg_decode_us;
         }
     }
 
