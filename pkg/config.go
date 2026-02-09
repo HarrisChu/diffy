@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	Environments map[string]any `yaml:"env"`
+	Statements   []string       `yaml:"statements"`
 	Jobs         []*Job         `yaml:"jobs"`
 }
 

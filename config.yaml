@@ -3,8 +3,15 @@ env:
   NEBULA_USER: "harris"
   NEBULA_PASSWORD: "Nebula2025.harris"
   NEBULA_CONCURRENCY: 1
-  NEBULA_ITERATIONS_PER_CONCURRENCY: 10
-  NEBULA_STATEMENT: "use sf1 match p=(v)->(v1) return p limit 100"
+  NEBULA_ITERATIONS_PER_CONCURRENCY: 100
+  NEBULA_STATEMENT: "use sf1 match(v:Comment) return v order by v.id desc limit 1000"
+
+statements:
+  - "use sf1 match(v:Comment) return v.id           order by v.id desc limit 1000"
+  - "use sf1 match(v:Comment) return v.content      order by v.id desc limit 1000"
+  - "use sf1 match(v:Comment) return v.creationDate order by v.id desc limit 1000"
+  - "use sf1 match(v:Comment) return v              order by v.id desc limit 1000"
+  - "use sf1 match p=(v:Comment)->(v1) return p     order by v.id desc limit 1000"
 
 jobs:
   - name: golang
@@ -12,24 +19,25 @@ jobs:
       cd go
       go run main.go default
   
-  - name: golang without scan
-    shell: |
-      cd go
-      go run main.go no_scan
+  # - name: golang without scan
+  #   shell: |
+  #     cd go
+  #     go run main.go no_scan
   
-  - name: golang without no reuse
-    shell: |
-      cd go
-      go run main.go no_reuse
+  # - name: golang without no reuse
+  #   shell: |
+  #     cd go
+  #     go run main.go no_reuse
+  
   - name: python thread
     shell: |
       cd python
       python3 main.py thread
 
-  - name: python process
-    shell: |
-      cd python
-      python3 main.py process
+  # - name: python process
+    # shell: |
+    #   cd python
+    #   python3 main.py process
 
   - name: java without warmup
     shell: |
